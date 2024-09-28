@@ -4,13 +4,13 @@ import joblib
 import numpy as np
 
 # Load the trained Random Forest model
-model = joblib.load('random_forest_model.pkl')
+model = joblib.load('RandomForest/random_forest_model.pkl')
 
 # Function to predict calories
 def predict_calories():
     try:
         # Get input values from the user
-        gender = gender_var.get().strip().lower()
+        gender = gender_var.get()
         age = age_entry.get().strip()
         height = height_entry.get().strip()
         weight = weight_entry.get().strip()
@@ -18,7 +18,7 @@ def predict_calories():
 
         # Validate that all required fields are filled
         if not all([gender, age, height, weight, duration]):
-            raise ValueError("All fields except Body Temperature and Heart Rate must be filled.")
+            raise ValueError("All fields must be filled.")
 
         # Validate gender input
         if gender not in ['male', 'female']:
@@ -28,7 +28,13 @@ def predict_calories():
         numeric_inputs = [age, height, weight, duration]
         for input_value in numeric_inputs:
             try:
-                float(input_value)
+                value = float(input_value)
+                if input_value == height and (value < 50 or value > 300):
+                    raise ValueError("Height must be between 50 cm and 300 cm.")
+                if input_value == weight and value < 10:
+                    raise ValueError("Weight must be at least 10 kg.")
+                if input_value == duration and value <= 0:
+                    raise ValueError("Duration must be greater than 0 minutes.")
             except ValueError:
                 raise ValueError(f"'{input_value}' is not a valid number.")
 
@@ -71,6 +77,9 @@ def predict_calories():
         # Predict calories burned
         calories_burned = model.predict(user_input)
 
+        # Check for negative calories
+        calories_burned[0] = max(0, calories_burned[0])  # Set to zero if negative
+
         # Display the prediction
         messagebox.showinfo('Prediction', f'Calories Burned: {calories_burned[0]:.2f}')
 
@@ -100,10 +109,12 @@ root = tk.Tk()
 root.title("Calories Burned Predictor (Random Forest)")
 
 # Gender input
-tk.Label(root, text="Gender (Male/Female):").grid(row=0, column=0)
-gender_var = tk.StringVar()
-gender_entry = tk.Entry(root, textvariable=gender_var)
-gender_entry.grid(row=0, column=1)
+tk.Label(root, text="Gender:").grid(row=0, column=0)
+gender_var = tk.StringVar(value='male')
+male_radio = tk.Radiobutton(root, text="Male", variable=gender_var, value='male')
+female_radio = tk.Radiobutton(root, text="Female", variable=gender_var, value='female')
+male_radio.grid(row=0, column=1)
+female_radio.grid(row=0, column=2)
 
 # Age input
 tk.Label(root, text="Age:").grid(row=1, column=0)
